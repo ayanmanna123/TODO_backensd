@@ -13,6 +13,7 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/todo-a
 
 // Import routes
 const todoRoutes = require('./routes/todoRoutes');
+const authRoutes = require('./routes/auth');
 
 // Middleware
 app.use(cors());
@@ -20,6 +21,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/todos', todoRoutes);
+app.use('/api', authRoutes);
 
 // Connect to MongoDB
 mongoose.connect(MONGODB_URI)
