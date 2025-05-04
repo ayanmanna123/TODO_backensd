@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
 
-const userSchema = new mongoose.Schema({
+const UserSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true
+    required: false  // Not required initially during verification
   },
   email: {
     type: String,
@@ -12,7 +12,27 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true
+    required: false  // Not required initially during verification
+  },
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  verificationCode: {
+    type: String,
+    default: null
+  },
+  codeExpires: {
+    type: Date,
+    default: null
+  },
+  resetCode: {
+    type: String,
+    default: null
+  },
+  resetCodeExpires: {
+    type: Date,
+    default: null
   },
   createdAt: {
     type: Date,
@@ -20,4 +40,4 @@ const userSchema = new mongoose.Schema({
   }
 });
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = mongoose.model('User', UserSchema);
