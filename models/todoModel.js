@@ -36,6 +36,11 @@ const todoSchema = new mongoose.Schema({
     trim: true,
     default: 'general'
   },
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User', // 🔗 Reference to User
+    required: true
+  },
   notes: {
     type: String,
     trim: true

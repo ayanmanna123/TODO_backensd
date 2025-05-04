@@ -46,6 +46,8 @@ router.post('/register', async (req, res) => {
         email: user.email
       }
     });
+    localStorage.setItem('token', token);
+
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ message: 'Server error' });

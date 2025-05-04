@@ -1,32 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const Todo = require('../models/todoModel');
+const auth = require('../middleware/auth'); // Use proper variable name
 
-// Get all todos
-router.get('/', async (req, res) => {
+// Get all todos for the authenticated user
+router.get('/', auth, async (req, res) => {
   try {
-    const todos = await Todo.find().sort({ createdAt: -1 });
+    const todos = await Todo.find({ user: req.user.id });
     res.json(todos);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
-// Get a specific todo
-router.get('/:id', async (req, res) => {
-  try {
-    const todo = await Todo.findById(req.params.id);
-    if (!todo) {
-      return res.status(404).json({ message: 'Todo not found' });
-    }
-    res.json(todo);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
 // Create a new todo
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
   const todo = new Todo({
     title: req.body.title,
     completed: req.body.completed || false,
@@ -34,7 +22,8 @@ router.post('/', async (req, res) => {
     priority: req.body.priority || 'medium',
     tags: req.body.tags || [],
     category: req.body.category || 'general',
-    notes: req.body.notes || ''
+    notes: req.body.notes || '',
+    user: req.user.id // Use user ID from token
   });
 
   try {
@@ -46,9 +35,13 @@ router.post('/', async (req, res) => {
 });
 
 // Update a todo
-router.put('/:id', async (req, res) => {
+router.put('/:id', auth, async (req, res) => {
   try {
-    const todo = await Todo.findById(req.params.id);
+    const todo = await Todo.findOne({ 
+      _id: req.params.id,
+      user: req.user.id // Ensure the todo belongs to the user
+    });
+    
     if (!todo) {
       return res.status(404).json({ message: 'Todo not found' });
     }
@@ -73,33 +66,41 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete a todo
-router.delete('/:id', async (req, res) => {
-    try {
-      const todo = await Todo.findById(req.params.id);
-       
-      if (!todo) {
-        return res.status(404).json({ message: 'Todo not found' });
-      }
-      
-      // Replace todo.remove() with either:
-      await Todo.findByIdAndDelete(req.params.id);
-      // OR
-      // await todo.deleteOne();
-      
-      res.json({ message: 'Todo deleted' });
-    } catch (error) {
-      console.error('Error in delete route:', error);
-      res.status(500).json({ message: error.message });
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    const todo = await Todo.findOne({
+      _id: req.params.id,
+      user: req.user.id // Ensure the todo belongs to the user
+    });
+     
+    if (!todo) {
+      return res.status(404).json({ message: 'Todo not found' });
     }
-  });
+    
+    await Todo.findByIdAndDelete(req.params.id);
+    
+    res.json({ message: 'Todo deleted' });
+  } catch (error) {
+    console.error('Error in delete route:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
 
 // Analyze and plan tomorrow's tasks
-router.post('/plan-tomorrow', async (req, res) => {
+router.post('/plan-tomorrow', auth, async (req, res) => {
   try {
-    // Get completion statistics
-    const completedTodos = await Todo.find({ completed: true });
-    const pendingTodos = await Todo.find({ completed: false });
+    // Get completion statistics for the current user
+    const completedTodos = await Todo.find({ 
+      completed: true,
+      user: req.user.id
+    });
     
+    const pendingTodos = await Todo.find({ 
+      completed: false,
+      user: req.user.id
+    });
+    
+    // Rest of the planning code remains the same...
     // Analyze completion patterns
     const completionByDay = {};
     const completionByCategory = {};
@@ -146,12 +147,13 @@ router.post('/plan-tomorrow', async (req, res) => {
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(0, 0, 0, 0);
     
-    // Check if we already have planned tasks for tomorrow
+    // Check if we already have planned tasks for tomorrow for this user
     const existingPlannedTasks = await Todo.find({
       dueDate: {
         $gte: tomorrow,
         $lt: new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000)
-      }
+      },
+      user: req.user.id
     });
     
     if (existingPlannedTasks.length > 0) {
@@ -200,7 +202,8 @@ router.post('/plan-tomorrow', async (req, res) => {
       dueDate: {
         $gte: tomorrow,
         $lt: new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000)
-      }
+      },
+      user: req.user.id
     });
     
     res.json({

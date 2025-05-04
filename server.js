@@ -21,7 +21,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/todos', todoRoutes);
-app.use('/api', authRoutes);
+app.use('/api/auth', authRoutes);
 
 // Connect to MongoDB
 mongoose.connect(MONGODB_URI)
